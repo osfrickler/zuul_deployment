@@ -3,6 +3,6 @@
 
 - name: smart_reload_scheduler
   community.docker.docker_container_exec:
-    conainer: zuul_scheduler
+    container: zuul_scheduler
     command: zuul-scheduler smart-reconfigure
 
