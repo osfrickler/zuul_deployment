@@ -11,6 +11,12 @@ jobs:
   reconfigure-zuul:
     runs-on: ubuntu-latest
     steps:
+      - name: Prepare SSH key
+        run: |
+          mkdir ~/.ssh
+          echo '${{ secrets.SSH_KEY }}' > ~/.ssh/id_rsa
+          chmod 0600 ~/.ssh/id_rsa
+
       - name: Checkout repo
         uses: actions/checkout@v2
 
