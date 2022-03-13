@@ -51,12 +51,6 @@ datefmt=
 
 Enable this by extending your zuul.conf:
 ```
-[gearman]
-log_config=/etc/zuul/log.conf
-
-[gearman_server]
-log_config=/etc/zuul/log.conf
-
 [zookeeper]
 log_config=/etc/zuul/log.conf
 
@@ -72,8 +66,6 @@ log_config=/etc/zuul/log.conf
 [executor]
 log_config=/etc/zuul/log.conf
 ```
-51.9
-63.164
 
 
 Requirements

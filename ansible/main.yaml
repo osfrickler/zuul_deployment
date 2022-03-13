@@ -4,7 +4,7 @@
   remote_user: ubuntu
   vars:
     zuul_user: zuul
-    zuul_host: zuul.scs.community
+    zuul_host: zuul.beta.fricklercloud.de
     webhook_token: webhooksecretvalue  # set me from command line
     db_user_pass: userpassword         # set me from command line
     db_root_pass: rootpassword         # set me from command line
@@ -40,6 +40,7 @@
     - name: add user
       user:
         name: "{{ zuul_user }}"
+        uid: 10001
         shell: /bin/bash
         group: "{{ zuul_user }}"
         groups: sudo
@@ -52,117 +53,95 @@
       role: zuul-ci
       vars:
         operator_user: "{{ zuul_user }}"
-        zookeeper_fqdn: zookeeper_1.scs
+        zookeeper_fqdn: zookeeper_1.osism.tech
         connections:
-          scszuulapp:
+          osfricklerzuulapp:
             driver: github
             webhook_token: "{{ webhook_token }}"
-            app_id: 124290
-            app_key: "/etc/zuul/pem-files/scszuulapp.pem"
+            app_id: 175556
+            app_key: "/etc/zuul/pem-files/osfricklerzuulapp.pem"
           opendevorg:
             name: opendev
             driver: git
             baseurl: https://opendev.org
         tenants:
           - tenant:
-              name: SovereignCloudStack
+              name: osism
               source:
                 opendevorg:
                   untrusted-projects:
                     - zuul/zuul-jobs:
                         include:
                           - job
-                scszuulapp:
+                osfricklerzuulapp:
                   config-projects:
-                    - SovereignCloudStack/zuul_config:
+                    - osfrickler/zuul_config:
                         load-branch: main
                   untrusted-projects:
-                    - SovereignCloudStack/Design-Docs
-                    - SovereignCloudStack/Docs
-                    - SovereignCloudStack/Monitoring
-                    - SovereignCloudStack/Operational-Docs
-                    - SovereignCloudStack/contributor-guide
-                    - SovereignCloudStack/docker-horizon
-                    - SovereignCloudStack/documentation
-                    - SovereignCloudStack/epics-and-stories
-                    - SovereignCloudStack/generics
-                    - SovereignCloudStack/github-permissions
-                    - SovereignCloudStack/graphics
-                    - SovereignCloudStack/gx-scs-identity-provider
-                    - SovereignCloudStack/infrastructure
-                    - SovereignCloudStack/issues
-                    - SovereignCloudStack/k8s-cassandra
-                    - SovereignCloudStack/k8s-cluster-api-provider
-                    - SovereignCloudStack/k8s-cortex
-                    - SovereignCloudStack/k8s-gatekeeper
-                    - SovereignCloudStack/k8s-grafana
-                    - SovereignCloudStack/k8s-harbor
-                    - SovereignCloudStack/k8s-harbor-manual
-                    - SovereignCloudStack/k8s-keycloak
-                    - SovereignCloudStack/k8s-minio
-                    - SovereignCloudStack/k8s-open-policy-agent
-                    - SovereignCloudStack/k8s-operator-minio
-                    - SovereignCloudStack/k8s-operator-postgres
-                    - SovereignCloudStack/k8s-operator-scylla
-                    - SovereignCloudStack/k8s-os-health-monitor
-                    - SovereignCloudStack/k8s-polaris
-                    - SovereignCloudStack/k8s-postgres
-                    - SovereignCloudStack/k8s-prometheus
-                    - SovereignCloudStack/k8s-template
-                    - SovereignCloudStack/mission-statement
-                    - SovereignCloudStack/openstack-flavor-manager
-                    - SovereignCloudStack/openstack-health-monitor
-                    - SovereignCloudStack/openstack-orphaned-resource-cleaner
-                    - SovereignCloudStack/openstack-simple-stress
-                    - SovereignCloudStack/openstack-vyos-image
-                    - SovereignCloudStack/poc-gardener
-                    - SovereignCloudStack/poc-kubermatic
-                    - SovereignCloudStack/poc-rancher
-                    - SovereignCloudStack/polaris-action
-                    - SovereignCloudStack/testbed
-                    - SovereignCloudStack/testbed-gx-iam
-                    - SovereignCloudStack/testbed-gx-k8s
-                    - SovereignCloudStack/testbed-gx-scs
-                    - SovereignCloudStack/website
-                    - SovereignCloudStack/zuul-sandbox
-                    - SovereignCloudStack/zuul_deployment
+                    - osfrickler/testbed
         database:
           user_name: zuul
           user_pass: "{{ db_user_pass }}"
           root_pass: "{{ db_root_pass }}"
           db_name: zuul
-        container_name:
-          mariadb: "zuul_mariadb"
-          zookeeper: "zuul_zookeeper"
-          nodepool_launcher: "zuul_nodepool_launcher"
-          zuul_scheduler: "zuul_scheduler"
-          zuul_web: "zuul_web"
-          zuul_executor: "zuul_executor"
-          log_server: "zuul_log_server"
-          worker_node_list:
-            - "zuul_worker_node_1"
-            - "zuul_worker_node_2"
-            - "zuul_worker_node_3"
+          # container_name:
+          # mariadb: "zuul_mariadb"
+          # zookeeper: "zuul_zookeeper"
+          # nodepool_launcher: "zuul_nodepool_launcher"
+          # zuul_scheduler: "zuul_scheduler"
+          # zuul_web: "zuul_web"
+          # zuul_executor: "zuul_executor"
+          # log_server: "zuul_log_server"
+        nodepool_labels:
+          labels:
+            - name: ubuntu-focal
+          diskimages:
+            - name: base
+              abstract: True
+              elements:
+                - vm
+                - simple-init
+                - growroot
+              env-vars:
+                TMPDIR: /srv/dib_tmp
+                DIB_CHECKSUM: '1'
+                DIB_IMAGE_CACHE: /srv/dib_cache
+          
+            - name: ubuntu-focal
+              parent: base
+              pause: False
+              rebuild-age: 86400
+              elements:
+                - ubuntu-minimal
+              release: focal
+              username: zuul
+              env-vars:
+                DIB_APT_LOCAL_CACHE: '0'
+                DIB_DISABLE_APT_CLEANUP: '0'
+                FS_TYPE: ext3
+
         nodepool_providers:
           providers:  # we need this sub-key. limitation of to_nice_yaml library
-            - name: static-vms
-              driver: static
+            - name: betacloud
+              driver: openstack
+              cloud: osism-ci
+              boot-timeout: 600
+              diskimages:
+                - name: ubuntu-focal
+              cloud-images: 
+                - name: "Ubuntu 20.04"
+                  username: ubuntu
               pools:
                 - name: main
-                  nodes:
-                    - name: zuul_worker_node_1
-                      labels: ubuntu-focal  # make sure nodepool_labels has this
-                      host-key-checking: false
-                      python-path: /usr/bin/python3
-                      username: root
-                    - name: zuul_worker_node_2
-                      labels: ubuntu-focal  # make sure nodepool_labels has this
-                      host-key-checking: false
-                      python-path: /usr/bin/python3
-                      username: root
-                    - name: zuul_worker_node_3
-                      labels: ubuntu-focal  # make sure nodepool_labels has this
-                      host-key-checking: false
-                      python-path: /usr/bin/python3
-                      username: root
+                  networks:
+                    - net-to-external-harbott
+                  security-groups:
+                    - icmp-ssh
+                  max-servers: 3
+                  labels:
+                    - name: ubuntu-focal
+                      min-ram: 4000
+                      cloud-image: "Ubuntu 20.04"
+                      key-name: harbott
+                      console-log: true
       become: true
