@@ -45,6 +45,7 @@
     - /srv/nodepool
     - /srv/nodepool/builds
     - /srv/nodepool/elements
+    - /srv/nodepool/images
 
 - name: include copy tasks
   include_tasks: copy_tasks.yml

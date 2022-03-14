@@ -3,8 +3,9 @@
   hosts: all
   remote_user: ubuntu
   vars:
+    zuul_app_name: osfricklerzuulapp
     zuul_user: zuul
-    zuul_host: zuul.beta.fricklercloud.de
+    zuul_host: zuul01.osism.xyz
     webhook_token: webhooksecretvalue  # set me from command line
     db_user_pass: userpassword         # set me from command line
     db_root_pass: rootpassword         # set me from command line
@@ -33,12 +34,12 @@
       become: true
 
     - name: add group
-      group:
+      ansible.builtin.group:
         name: "{{ zuul_user }}"
       become: true
 
     - name: add user
-      user:
+      ansible.builtin.user:
         name: "{{ zuul_user }}"
         uid: 10001
         shell: /bin/bash
@@ -48,18 +49,36 @@
         home: "/home/{{ zuul_user }}"
       become: true
 
+    - name: Create /etc/openstack/
+      ansible.builtin.file:
+        state: directory
+        path: /etc/openstack
+        owner: root
+        group: root
+        mode: 0755
+      become: true
+
+    - name: Deploy clouds.yaml file
+      ansible.builtin.copy:
+        src: clouds.yaml
+        dest: /etc/openstack/clouds.yaml
+        owner: root
+        group: zuul
+        mode: '0640'
+      become: true
+
   roles:
     - name: zuul-setup role
       role: zuul-ci
       vars:
         operator_user: "{{ zuul_user }}"
-        zookeeper_fqdn: zookeeper_1.osism.tech
+        zookeeper_fqdn: zookeeper01.osism.xyz
         connections:
           osfricklerzuulapp:
             driver: github
             webhook_token: "{{ webhook_token }}"
             app_id: 175556
-            app_key: "/etc/zuul/pem-files/osfricklerzuulapp.pem"
+            app_key: "/etc/zuul/pem-files/{{ zuul_app_name }}.pem"
           opendevorg:
             name: opendev
             driver: git
@@ -84,14 +103,6 @@
           user_pass: "{{ db_user_pass }}"
           root_pass: "{{ db_root_pass }}"
           db_name: zuul
-          # container_name:
-          # mariadb: "zuul_mariadb"
-          # zookeeper: "zuul_zookeeper"
-          # nodepool_launcher: "zuul_nodepool_launcher"
-          # zuul_scheduler: "zuul_scheduler"
-          # zuul_web: "zuul_web"
-          # zuul_executor: "zuul_executor"
-          # log_server: "zuul_log_server"
         nodepool_labels:
           labels:
             - name: ubuntu-focal

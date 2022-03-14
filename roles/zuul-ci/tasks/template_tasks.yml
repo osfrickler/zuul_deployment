@@ -15,7 +15,7 @@
     group: "{{ operator_group }}"
     mode: 0755
 
-- name: tempalte zuul zuul.conf
+- name: template zuul zuul.conf
   template:
     src: zuul.conf.j2
     dest: "{{ component_conf_dirs.zuul }}/zuul.conf"

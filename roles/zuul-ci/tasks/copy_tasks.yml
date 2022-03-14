@@ -1,13 +1,13 @@
 ---
 - name: copy pem files (e.g. for github)
-  synchronize:
+  ansible.posix.synchronize:
     src: "{{ playbook_dir }}/pem-files/"
     dest: "{{ component_conf_dirs.zuul }}/pem-files"
     owner: false
     group: false
 
 - name: copy logging configs
-  copy:
+  ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ component_conf_dirs.zuul }}/{{ item }}"
     owner: "{{ operator_user }}"
@@ -19,7 +19,7 @@
     - fingergw-logging.conf
 
 - name: copy zookeeper certificate generator script
-  copy:
+  ansible.builtin.copy:
     src: "{{ item['file'] }}"
     dest: "{{ component_conf_dirs.certs }}/{{ item['file'] }}"
     owner: "{{ operator_user }}"
@@ -32,7 +32,7 @@
       mode: "0644"
 
 - name: copy log server config
-  copy:
+  ansible.builtin.copy:
     src: httpd.conf
     dest: "{{ component_conf_dirs.log_server }}/httpd.conf"
     owner: "{{ operator_user }}"
@@ -40,17 +40,9 @@
     mode: 0644
 
 - name: copy log server dockerfile
-  copy:
+  ansible.builtin.copy:
     src: log_server_Dockerfile
     dest: "{{ component_conf_dirs.log_server }}/log_server_Dockerfile"
-    owner: "{{ operator_user }}"
-    group: "{{ operator_group }}"
-    mode: 0644
-
-- name: copy worker node dockerfile
-  copy:
-    src: worker_node_Dockerfile
-    dest: "{{ component_conf_dirs.ssh_keys }}/worker_node_Dockerfile"
     owner: "{{ operator_user }}"
     group: "{{ operator_group }}"
     mode: 0644
