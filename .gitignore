@@ -1,2 +1,2 @@
-ansible/.ansible_pass
-ansible/vars.yml
+.ansible_pass
+vars.yml

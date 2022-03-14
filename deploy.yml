@@ -1,0 +1,97 @@
+---
+- name: Setup zuul server
+  hosts: localhost
+  vars:
+    cloud: betacloud
+    flavor: 4C-8GB-40GB
+    image: Ubuntu 20.04
+    network: net-to-external-testbed
+    project: osism-ci
+    zuul_domain: osism.xyz.
+    zuul_host: zuul01.osism.xyz
+
+  tasks:
+    - name: Create temporary file
+      ansible.builtin.tempfile:
+        state: file
+        suffix: temp
+      register: tempfile
+
+    - name: Fill tempfile with public keys
+      include_role: 
+        name: user-manager
+      vars:
+        user_manager_type: keyfile
+        user_manager_file: "{{ tempfile.path }}"
+
+    - name: Create keypair in the cloud
+      openstack.cloud.keypair:
+        cloud: "{{ cloud }}"
+        name: "{{ project }}"
+        public_key_file: "{{ tempfile.path }}"
+
+    - name: Remove the temporary file
+      ansible.builtin.file:
+        path: "{{ tempfile.path }}"
+        state: absent
+
+    - name: Create security group
+      openstack.cloud.security_group:
+        cloud: "{{ cloud }}"
+        name: "{{ project }}-zuul"
+
+    - name: Create security group rules
+      openstack.cloud.security_group_rule:
+        cloud: "{{ cloud }}"
+        security_group: "{{ project }}-zuul"
+        protocol: tcp
+        remote_ip_prefix: 0.0.0.0/0
+        port_range_min: "{{ item }}"
+        port_range_max: "{{ item }}"
+      loop:
+        - 22
+        - 8000
+        - 9000
+
+    - name: Create zuul server
+      openstack.cloud.server:
+        cloud: "{{ cloud }}"
+        flavor: "{{ flavor }}"
+        image: "{{ image }}"
+        key_name: "{{ project }}"
+        name: "{{ zuul_host }}"
+        network: "{{ network }}"
+        security_groups: 
+          - default
+          - "{{ project }}-zuul"
+      register: zuul_server
+
+    - name: Add host
+      add_host:
+        name: "{{ zuul_server.openstack.accessIPv4 }}"
+        groups: zuul
+        ansible_user: ubuntu
+
+    - debug:
+        msg: "{{ zuul_server.openstack.accessIPv4 }}"
+
+    - name: Create DNS record
+      openstack.cloud.recordset:
+        cloud: "{{ cloud }}"
+        zone: "{{ zuul_domain }}"
+        name: "{{ zuul_host }}."
+        recordset_type: "a"
+        records: ["{{ zuul_server.openstack.accessIPv4 }}"]
+
+- name: Initialize zuul server
+  hosts: zuul
+  gather_facts: no
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+    - name: apt update
+      apt:
+        upgrade: dist
+        update_cache: yes
+      become: yes
+

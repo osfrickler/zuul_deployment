@@ -1,1 +1,0 @@
-project = "scs-zuul-ci"
