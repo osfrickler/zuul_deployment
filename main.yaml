@@ -3,9 +3,10 @@
   hosts: all
   remote_user: ubuntu
   vars:
-    zuul_app_name: osfricklerzuulapp
     zuul_user: zuul
     zuul_host: zuul01.osism.xyz
+    github_app_id: 180718
+    github_pem_name: osism-zuul-app
     webhook_token: webhooksecretvalue  # set me from command line
     db_user_pass: userpassword         # set me from command line
     db_root_pass: rootpassword         # set me from command line
@@ -24,6 +25,7 @@
           - docker.io
           - docker-compose
           - python3-docker
+          - python3-openstackclient
       become: true
     
     - name: add user to docker group
@@ -66,19 +68,26 @@
         group: zuul
         mode: '0640'
       become: true
+    
+    - name: Create keypair in the cloud
+      openstack.cloud.keypair:
+        cloud: osism-ci
+        name: osism-zuul
+        public_key: "{{ lookup('file', 'nodepool.pub') }}"
+      become: true
 
   roles:
     - name: zuul-setup role
-      role: zuul-ci
+      role: zuul
       vars:
         operator_user: "{{ zuul_user }}"
         zookeeper_fqdn: zookeeper01.osism.xyz
         connections:
-          osfricklerzuulapp:
+          github:
             driver: github
             webhook_token: "{{ webhook_token }}"
-            app_id: 175556
-            app_key: "/etc/zuul/pem-files/{{ zuul_app_name }}.pem"
+            app_id: "{{ github_app_id }}"
+            app_key: "/etc/zuul/pem-files/{{ github_pem_name }}.pem"
           opendevorg:
             name: opendev
             driver: git
@@ -92,12 +101,14 @@
                     - zuul/zuul-jobs:
                         include:
                           - job
-                osfricklerzuulapp:
+                github:
                   config-projects:
-                    - osfrickler/zuul_config:
+                    - osism/zuul_config:
                         load-branch: main
                   untrusted-projects:
+                    - osfrickler/cirros
                     - osfrickler/testbed
+                    - osism/testbed
         database:
           user_name: zuul
           user_pass: "{{ db_user_pass }}"
@@ -153,6 +164,6 @@
                     - name: ubuntu-focal
                       min-ram: 4000
                       cloud-image: "Ubuntu 20.04"
-                      key-name: harbott
+                      key-name: osism-zuul
                       console-log: true
       become: true
