@@ -5,6 +5,9 @@
   vars:
     zuul_user: zuul
     zuul_host: zuul01.osism.xyz
+    zuul_logserver_fqdn: logs.osism.xyz
+    zuul_webserver_fqdn: zuul.osism.xyz
+    zuul_webserver_admin: info@osism.tech
     github_app_id: 180718
     github_pem_name: osism-zuul-app
     webhook_token: webhooksecretvalue  # set me from command line
