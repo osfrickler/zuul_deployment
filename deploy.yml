@@ -3,7 +3,7 @@
   hosts: localhost
   vars:
     cloud: betacloud
-    flavor: 4C-8GB-40GB
+    flavor: SCS-4V:8:50
     image: Ubuntu 20.04
     network: net-to-external-testbed
     project: osism-ci
@@ -39,6 +39,7 @@
       openstack.cloud.security_group:
         cloud: "{{ cloud }}"
         name: "{{ project }}-zuul"
+        description: "Default security group for {{ project }}-zuul"
 
     - name: Create security group rules
       openstack.cloud.security_group_rule:
@@ -52,8 +53,6 @@
         - 22
         - 80
         - 443
-        - 8000
-        - 9000
 
     - name: Create zuul server
       openstack.cloud.server:
