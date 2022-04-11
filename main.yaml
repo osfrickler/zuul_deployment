@@ -129,6 +129,7 @@
                     - osism/python-osism
                     - osism/release
                     - osism/testbed
+                    - osism/zuul_jobs
         database:
           user_name: zuul
           user_pass: "{{ db_user_pass }}"
