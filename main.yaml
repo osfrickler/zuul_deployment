@@ -176,9 +176,9 @@
               pools:
                 - name: main
                   networks:
-                    - net-to-external-harbott
+                    - net-to-external-osism-ci
                   security-groups:
-                    - icmp-ssh
+                    - zuul-worker-node
                   max-servers: 3
                   labels:
                     - name: ubuntu-focal
