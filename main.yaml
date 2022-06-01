@@ -98,6 +98,7 @@
         tenants:
           - tenant:
               name: osism
+              exclude-unprotected-branches: true
               source:
                 opendevorg:
                   untrusted-projects:
@@ -106,7 +107,7 @@
                           - job
                 github:
                   config-projects:
-                    - osism/zuul_config:
+                    - osism/zuul-config:
                         load-branch: main
                   untrusted-projects:
                     - osfrickler/cirros
@@ -129,15 +130,18 @@
                     - osism/python-osism
                     - osism/release
                     - osism/testbed
-                    - osism/zuul_jobs
+                    - osism/zuul-jobs
         database:
           user_name: zuul
           user_pass: "{{ db_user_pass }}"
           root_pass: "{{ db_root_pass }}"
           db_name: zuul
         nodepool_labels:
+          elements-dir: /srv/nodepool/elements
           labels:
             - name: ubuntu-focal
+            - name: ubuntu-jammy
+            - name: static-testbed
           diskimages:
             - name: base
               abstract: True
@@ -145,14 +149,18 @@
                 - vm
                 - simple-init
                 - growroot
+                - infra-package-needs
+                - zuul-worker
               env-vars:
                 TMPDIR: /srv/dib_tmp
+                ZUUL_USER_SSH_PUBLIC_KEY: |
+                  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDyCU/YncItaW8asyKb/vJr0T+VIfFWvKfyqeenmZcMzY9lJ7SbYz0I+81pfAxgBIDpiPBs6M6p2r4cumkzuazjMPK0o8k32uZgnIdE8l51+Fdhf1U0ejhiLhhMlP129im20wp9uf0U5KrzZ07aRT6UDV2hT85qizPMPcwyIy6zCFtG8ac+OIyHjICHz/j3toK99UGcpmz9bxzM3cZ9+Xo9HtizzAXzAbO+MPRGe7342GUcBQPl51ZPw0wu3+OSDgXRNAvQZn4KP5GCJhaTgykVsuEtEwnPD4R4+PbVOsihIIlVhSk5dA98+Ghda3ibFuD+BHvBu6uLtEy6oGWgHxRUdoRkGFg2ItAdjTe4FfTobuaAeGPyHLCmbyUMCKTLF0zvZhgayuzjy0oHw6N/OMXMFkPD6g3zt+9TwTqoOjsXex2usTrNnfmO6ml0yeyfWoR7Air1dHrXmrz3MDniSu0/vaxKSirzzev4UeKkJyobJ87uL1ebQ42mBFhv98dD1Bqzx8Bm4OTSADSrwtGaSw9KXvQ+R+r7oC4JuXJP/LKGQAh7wfNnkUabgSgSJaC6aVADo0qTFnVnd1SqA/0oOaV0RyUK6mAZv9+FIVlPTVtNijdsJf5NWuuKhLrH51DJqBZpGblTvNcFsi5AxDLyZZgIrzfSgYs8xVDUW6HRvYW7mw== zuul-nodepool-worker-key
                 DIB_CHECKSUM: '1'
                 DIB_IMAGE_CACHE: /srv/dib_cache
           
             - name: ubuntu-focal
               parent: base
-              pause: False
+              pause: false
               rebuild-age: 86400
               elements:
                 - ubuntu-minimal
@@ -162,6 +170,19 @@
                 DIB_APT_LOCAL_CACHE: '0'
                 DIB_DISABLE_APT_CLEANUP: '0'
                 FS_TYPE: ext3
+            - name: ubuntu-jammy
+              elements:
+               - ubuntu-minimal
+              env-vars:
+                DIB_APT_LOCAL_CACHE: '0'
+                DIB_DISABLE_APT_CLEANUP: '0'
+                FS_TYPE: ext3
+              parent: base
+              pause: false
+              rebuild-age: 86400
+              release: jammy
+              username: zuul
+
 
         nodepool_providers:
           providers:  # we need this sub-key. limitation of to_nice_yaml library
@@ -171,9 +192,7 @@
               boot-timeout: 600
               diskimages:
                 - name: ubuntu-focal
-              cloud-images: 
-                - name: "Ubuntu 20.04"
-                  username: ubuntu
+                - name: ubuntu-jammy
               pools:
                 - name: main
                   networks:
@@ -184,7 +203,21 @@
                   labels:
                     - name: ubuntu-focal
                       min-ram: 4000
-                      cloud-image: "Ubuntu 20.04"
+                      diskimage: ubuntu-focal
                       key-name: osism-zuul
                       console-log: true
+                    - name: ubuntu-jammy
+                      min-ram: 4000
+                      diskimage: ubuntu-jammy
+                      key-name: osism-zuul
+                      console-log: true
+            - name: static-testbed
+              driver: static
+              pools:
+                - name: betacloud
+                  nodes:
+                    - name: 81.163.192.170
+                      labels: static-testbed
+                      username: ubuntu
+                      host-key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC45EcO6trhIAFXO+zgOlqe8Sgm0iMhCh5h0xx+eDewJ"
       become: true
